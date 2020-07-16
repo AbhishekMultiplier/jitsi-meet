@@ -12,6 +12,7 @@ import { Chat } from '../../../chat';
 import { Filmstrip } from '../../../filmstrip';
 import { CalleeInfoContainer } from '../../../invite';
 import { LargeVideo } from '../../../large-video';
+import { KnockingParticipantList, LobbyScreen } from '../../../lobby';
 import { Prejoin, isPrejoinPageVisible } from '../../../prejoin';
 import {
     Toolbox,
@@ -71,6 +72,11 @@ type Props = AbstractProps & {
      * Whether the local participant is recording the conference.
      */
     _iAmRecorder: boolean,
+
+    /**
+     * Returns true if the 'lobby screen' is visible.
+     */
+    _isLobbyScreenVisible: boolean,
 
     /**
      * The CSS class to apply to the root of {@link Conference} to modify the
@@ -176,21 +182,17 @@ class Conference extends AbstractConference<Props, *> {
      */
     render() {
         const {
-            VIDEO_QUALITY_LABEL_DISABLED,
-
             // XXX The character casing of the name filmStripOnly utilized by
             // interfaceConfig is obsolete but legacy support is required.
             filmStripOnly: filmstripOnly
         } = interfaceConfig;
         const {
             _iAmRecorder,
+            _isLobbyScreenVisible,
             _layoutClassName,
             _showPrejoin
         } = this.props;
-        const hideVideoQualityLabel
-            = filmstripOnly
-                || VIDEO_QUALITY_LABEL_DISABLED
-                || _iAmRecorder;
+        const hideLabels = filmstripOnly || _iAmRecorder;
 
         return (
             <div
@@ -203,19 +205,19 @@ class Conference extends AbstractConference<Props, *> {
                 <InviteMore />
                 <div id = 'videospace'>
                     <LargeVideo />
-                    { hideVideoQualityLabel
-                        || <Labels /> }
+                    <KnockingParticipantList />
                     <Filmstrip filmstripOnly = { filmstripOnly } />
+                    { hideLabels || <Labels /> }
                 </div>
 
-                { filmstripOnly || _showPrejoin || <Toolbox /> }
+                { filmstripOnly || _showPrejoin || _isLobbyScreenVisible || <Toolbox /> }
                 { filmstripOnly || <Chat /> }
 
                 { this.renderNotificationsContainer() }
 
-                { !filmstripOnly && _showPrejoin && <Prejoin />}
-
                 <CalleeInfoContainer />
+
+                { !filmstripOnly && _showPrejoin && <Prejoin />}
             </div>
         );
     }
@@ -280,6 +282,7 @@ function _mapStateToProps(state) {
     return {
         ...abstractMapStateToProps(state),
         _iAmRecorder: state['features/base/config'].iAmRecorder,
+        _isLobbyScreenVisible: state['features/base/dialog']?.component === LobbyScreen,
         _layoutClassName: LAYOUT_CLASSNAMES[getCurrentLayout(state)],
         _roomName: getConferenceNameForTitle(state),
         _showPrejoin: isPrejoinPageVisible(state)

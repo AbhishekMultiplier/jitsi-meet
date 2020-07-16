@@ -1,5 +1,6 @@
 // @flow
 
+import { API_ID } from '../../../modules/API';
 import {
     checkChromeExtensionsInstalled,
     isMobileBrowser
@@ -27,6 +28,16 @@ export function sendAnalytics(event: Object) {
     } catch (e) {
         logger.warn(`Error sending analytics event: ${e}`);
     }
+}
+
+/**
+ * Return saved amplitude identity info such as session id, device id and user id. We assume these do not change for
+ * the duration of the conference.
+ *
+ * @returns {Object}
+ */
+export function getAmplitudeIdentity() {
+    return analytics.amplitudeIdentityProps;
 }
 
 /**
@@ -91,6 +102,8 @@ export function createHandlers({ getState }: { getState: Function }) {
     try {
         const amplitude = new AmplitudeHandler(handlerConstructorOptions);
 
+        analytics.amplitudeIdentityProps = amplitude.getIdentityProps();
+
         handlers.push(amplitude);
     // eslint-disable-next-line no-empty
     } catch (e) {}
@@ -116,7 +129,9 @@ export function createHandlers({ getState }: { getState: Function }) {
             })
             .catch(e => {
                 analytics.dispose();
-                logger.error(e);
+                if (handlers.length !== 0) {
+                    logger.error(e);
+                }
 
                 return [];
             }));
@@ -155,6 +170,12 @@ export function initAnalytics({ getState }: { getState: Function }, handlers: Ar
     //  Report if user is using websocket
     permanentProperties.websocket = navigator.product !== 'ReactNative' && typeof config.websocket === 'string';
 
+    // permanentProperties is external api
+    permanentProperties.externalApi = typeof API_ID === 'number';
+
+    // Report if we are loaded in iframe
+    permanentProperties.inIframe = _inIframe();
+
     // Optionally, include local deployment information based on the
     // contents of window.config.deploymentInfo.
     if (deploymentInfo) {
@@ -181,6 +202,24 @@ export function initAnalytics({ getState }: { getState: Function }, handlers: Ar
                 });
             }
         });
+    }
+}
+
+/**
+ * Checks whether we are loaded in iframe.
+ *
+ * @returns {boolean} Returns {@code true} if loaded in iframe.
+ * @private
+ */
+function _inIframe() {
+    if (navigator.product === 'ReactNative') {
+        return false;
+    }
+
+    try {
+        return window.self !== window.top;
+    } catch (e) {
+        return true;
     }
 }
 

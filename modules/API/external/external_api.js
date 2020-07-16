@@ -37,6 +37,8 @@ const commands = {
     sendEndpointTextMessage: 'send-endpoint-text-message',
     sendTones: 'send-tones',
     setVideoQuality: 'set-video-quality',
+    startRecording: 'start-recording',
+    stopRecording: 'stop-recording',
     subject: 'subject',
     submitFeedback: 'submit-feedback',
     toggleAudio: 'toggle-audio',
@@ -755,6 +757,17 @@ export default class JitsiMeetExternalAPI extends EventEmitter {
     isAudioMuted() {
         return this._transport.sendRequest({
             name: 'is-audio-muted'
+        });
+    }
+
+    /**
+     * Returns screen sharing status.
+     *
+     * @returns {Promise} - Resolves with screensharing status and rejects on failure.
+     */
+    isSharingScreen() {
+        return this._transport.sendRequest({
+            name: 'is-sharing-screen'
         });
     }
 
